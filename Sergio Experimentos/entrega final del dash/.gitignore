@@ -1,0 +1,77 @@
+# ==============================================================================
+# Entornos Virtuales y Dependencias de Python
+# ==============================================================================
+venv/
+env_osmnx/
+env_mapas/
+.env
+.venv
+env/
+Active_Tcl/
+DLLs/
+Include/
+Lib/
+libs/
+Scripts/
+tcl/
+pip-selfcheck.json
+
+# ==============================================================================
+# Caches de Python y Compilación
+# ==============================================================================
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ipynb_checkpoints/
+
+# ==============================================================================
+# Archivos de Datos Grandes (Superan el límite de 50MB/100MB de GitHub)
+# ==============================================================================
+base_datos_crudas/
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# ==============================================================================
+# Cachés de Descarga de Datos (OSMnx y Grafos de Red)
+# ==============================================================================
+scripts_analisis/cache/
+scripts_analisis/redes/
+cache/
+redes/
+
+# ==============================================================================
+# Archivos Auxiliares de LaTeX (Mantener la raíz limpia)
+# ==============================================================================
+*.aux
+*.log
+*.toc
+*.out
+*.synctex.gz
+*.fdb_latexmk
+*.fls
+*.pdfsync
+*.blg
+*.bbl
+
+# ==============================================================================
+# Archivos de Sistema y Editores de Código
+# ==============================================================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp

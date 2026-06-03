@@ -1,0 +1,408 @@
+\documentclass[12pt, a4paper]{article}
+
+% Paquetes
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{fancyvrb}
+\usepackage{tikz}
+\usetikzlibrary{trees}
+
+\geometry{top=2.5cm, bottom=2.5cm, left=2.5cm, right=2.5cm}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue!70!black,
+    urlcolor=blue!50!black
+}
+
+% Colores personalizados
+\definecolor{folder}{RGB}{50, 120, 200}
+\definecolor{file}{RGB}{80, 80, 80}
+\definecolor{highlight}{RGB}{200, 60, 60}
+
+\title{\textbf{Guía de Estructura del Proyecto} \\[0.3cm]
+\large Análisis Geoespacial de la Incidencia Delictiva en Guadalajara}
+\author{Sergio Bernardo Robles Delgado \\
+Maestría en Ciencias Robóticas (MCR) \\
+CIMAT Sede Zacatecas}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Este documento sirve como guía de navegación para el proyecto comprimido. Describe la jerarquía de carpetas, el propósito de cada script de Python, las bases de datos utilizadas y las imágenes de resultados generadas. Consulte esta guía antes de explorar el contenido para ubicar rápidamente la información que necesite.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+% ═══════════════════════════════════════════════════════════════════════════
+\section{Vista General del Proyecto}
+% ═══════════════════════════════════════════════════════════════════════════
+
+El proyecto está organizado en \textbf{6 carpetas temáticas} numeradas, más carpetas auxiliares de datos y entornos virtuales. La estructura sigue el flujo lógico del análisis: preparación $\rightarrow$ correlación $\rightarrow$ mapeo $\rightarrow$ perfil social $\rightarrow$ movilidad $\rightarrow$ pruebas.
+
+\vspace{0.5cm}
+\begin{center}
+\begin{tikzpicture}[
+    grow via three points={one child at (0.5,-0.7) and two children at (0.5,-0.7) and (0.5,-1.4)},
+    edge from parent path={(\tikzparentnode.south west)++(0.3,0) |- (\tikzchildnode.west)},
+    every node/.style={anchor=west, font=\ttfamily\small},
+    folder/.style={font=\ttfamily\small\bfseries, text=folder},
+    root/.style={font=\ttfamily\normalsize\bfseries, text=highlight},
+    level 1/.style={sibling distance=0.7cm}
+    ]
+    \node [root] {proyecto\_mapas/}
+        child { node [folder] {01\_preparacion\_datos/}}
+        child [missing] {}
+        child { node [folder] {02\_correlaciones\_generales/}}
+        child [missing] {}
+        child { node [folder] {03\_analisis\_geoespacial/}}
+        child [missing] {}
+        child { node [folder] {04\_analisis\_sociodemografico/}}
+        child [missing] {}
+        child { node [folder] {05\_movilidad\_vial/}}
+        child [missing] {}
+        child { node [folder] {06\_pruebas/}}
+        child [missing] {}
+        child { node [folder] {base\_datos/}}
+        child [missing] {}
+        child { node [folder] {base de datos para prueba/}}
+        child [missing] {}
+        child { node [folder] {guadalajara\_AGEB/}}
+        child [missing] {}
+        child { node {*.csv (datos procesados en raíz)}}
+        child [missing] {}
+        child { node {reporte\_proyecto.tex / .pdf}}
+        child [missing] {}
+        child { node {GUIA\_DEL\_PROYECTO.tex / .pdf}};
+\end{tikzpicture}
+\end{center}
+
+% ═══════════════════════════════════════════════════════════════════════════
+\section{Carpetas Principales (Flujo de Trabajo)}
+% ═══════════════════════════════════════════════════════════════════════════
+
+% ─────────────────────────────────────────────────────────────────────────
+\subsection{\texttt{01\_preparacion\_datos/}}
+% ─────────────────────────────────────────────────────────────────────────
+
+\textbf{Propósito:} Limpieza, filtrado y homologación de las fuentes de datos crudas para generar los CSV procesados que usan todos los demás módulos.
+
+\begin{table}[h!]
+\centering
+\small
+\begin{tabular}{p{5cm} p{9cm}}
+\toprule
+\textbf{Archivo} & \textbf{Descripción} \\
+\midrule
+\texttt{01\_preparar\_datos.py} & Script principal. Lee las bases ENVIPE (TSDem, TMod\_Vic, TPer\_Vic1, TVivienda), el DENUE y filtra todo para Guadalajara. Genera los CSV procesados: \texttt{gdl\_sdem.csv}, \texttt{gdl\_delitos.csv}, \texttt{gdl\_victimas.csv}, \texttt{gdl\_percepcion.csv} y \texttt{gdl\_denue.csv}. \\
+\addlinespace
+\texttt{04\_mas\_datos.py} & Incorpora variables adicionales del Censo ITER por AGEB (\texttt{RESAGEBURB\_14CSV20.csv}) y las cruza con los datos de delitos del IIEG (\texttt{iieg\_2023.csv}). \\
+\midrule
+\multicolumn{2}{l}{\textit{Bases de datos de entrada (copias locales):}} \\
+\addlinespace
+\texttt{TSDem.csv} & ENVIPE --- módulo sociodemográfico (nacional). \\
+\texttt{TMod\_Vic.csv} & ENVIPE --- modalidad de victimización. \\
+\texttt{TPer\_Vic1.csv} & ENVIPE --- personas víctimas (parte 1). \\
+\texttt{TVivienda.csv} & ENVIPE --- características de la vivienda. \\
+\texttt{RESAGEBURB\_14CSV20.csv} & Censo ITER --- indicadores por AGEB (Jalisco). \\
+\texttt{iieg\_2023.csv} & Incidencia delictiva georreferenciada (IIEG 2023). \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ─────────────────────────────────────────────────────────────────────────
+\subsection{\texttt{02\_correlaciones\_generales/}}
+% ─────────────────────────────────────────────────────────────────────────
+
+\textbf{Propósito:} Análisis estadístico de correlaciones entre el entorno urbano (negocios, alumbrado, infraestructura) y la incidencia delictiva, usando métodos paramétricos (Pearson) y no paramétricos (Spearman).
+
+\begin{table}[h!]
+\centering
+\small
+\begin{tabular}{p{5.5cm} p{8.5cm}}
+\toprule
+\textbf{Archivo} & \textbf{Descripción} \\
+\midrule
+\multicolumn{2}{l}{\textit{Scripts de Python:}} \\
+\addlinespace
+\texttt{02\_analisis\_correlacion.py} & Primer análisis exploratorio cruzando DENUE, delitos, víctimas y percepción. \\
+\texttt{03\_matriz\_correlacion.py} & Genera matrices de correlación completas: lugar $\times$ tipo, Pearson entre tipos, DENUE $\times$ delito. Exporta reportes CSV. \\
+\texttt{06\_correlacion.py} & Análisis con alumbrado público: matriz triangular, dispersión, p-valores y comparativa Pearson vs.\ Spearman. \\
+\texttt{07\_correlaciones.py} & Validación con Spearman e I de Moran bivariado (correlación geoespacial de vecindario). \\
+\midrule
+\multicolumn{2}{l}{\textit{Imágenes de resultados:}} \\
+\addlinespace
+\texttt{analisis\_correlacion.png} & Gráfico exploratorio inicial. \\
+\texttt{denue\_categorias.png} & Distribución de categorías del DENUE. \\
+\texttt{grafico\_delitos\_gdl.png} & Frecuencia de delitos en Guadalajara. \\
+\texttt{cor\_01 a cor\_04*.png} & Serie de 4 gráficas de correlación con alumbrado. \\
+\texttt{01\_matriz\_triangular.png} & Matriz triangular Spearman. \\
+\texttt{02\_dispersion\_spearman.png} & Dispersión no paramétrica. \\
+\texttt{03\_moran\_bivariado.png} & Validación geoespacial (I de Moran). \\
+\midrule
+\multicolumn{2}{l}{\textit{Reportes CSV generados:}} \\
+\addlinespace
+\texttt{reporte\_correlacion.csv} & Pares de correlación Pearson ordenados. \\
+\texttt{reporte\_correlacion\_pct.csv} & Tabla completa en porcentajes. \\
+\texttt{reporte\_correlacion\_conteos.csv} & Conteos crudos por pivote. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ─────────────────────────────────────────────────────────────────────────
+\subsection{\texttt{03\_analisis\_geoespacial/}}
+% ─────────────────────────────────────────────────────────────────────────
+
+\textbf{Propósito:} Visualización espacial de la incidencia delictiva sobre el mapa de Guadalajara mediante mapas de calor (\textit{heatmaps}), identificación de zonas críticas y clústeres.
+
+\begin{table}[h!]
+\centering
+\small
+\begin{tabular}{p{6cm} p{8cm}}
+\toprule
+\textbf{Archivo} & \textbf{Descripción} \\
+\midrule
+\multicolumn{2}{l}{\textit{Scripts de Python:}} \\
+\addlinespace
+\texttt{03\_mapa\_denue\_heatmap.py} & Genera mapas de calor superponiendo delitos (IIEG) con puntos de interés del DENUE sobre la red vial de Guadalajara. \\
+\texttt{mapacalor.py} & Mapa de calor general de delitos por colonia, usando centroides y suavizado gaussiano. \\
+\midrule
+\multicolumn{2}{l}{\textit{Imágenes de resultados:}} \\
+\addlinespace
+\texttt{guadalajara\_denue\_heatmap.png} & Heatmap de densidad DENUE + delitos. \\
+\texttt{guadalajara\_poi\_heatmap.png} & Heatmap de puntos de interés. \\
+\texttt{heatmap\_colonias.png} & Mapa de calor por colonia. \\
+\texttt{heatmap\_critico.png} & Zonas críticas identificadas. \\
+\texttt{clustering\_zonas.png} & Clústeres de zonas delictivas. \\
+\texttt{gravedad\_delitos.png} & Mapa de gravedad del delito. \\
+\texttt{colonias\_peligrosas\_*.png} & Variantes del mapa de colonias peligrosas. \\
+\texttt{mapa\_delitos\_gdl*.png} & Mapas de delitos (Guadalajara y Zapopan). \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ─────────────────────────────────────────────────────────────────────────
+\subsection{\texttt{04\_analisis\_sociodemografico/}}
+% ─────────────────────────────────────────────────────────────────────────
+
+\textbf{Propósito:} Cruce de variables sociodemográficas (educación, sexo, edad, entorno urbano) con tipos de delitos para identificar perfiles de vulnerabilidad y validar hipótesis criminológicas.
+
+\begin{table}[h!]
+\centering
+\small
+\begin{tabular}{p{6cm} p{8cm}}
+\toprule
+\textbf{Archivo} & \textbf{Descripción} \\
+\midrule
+\multicolumn{2}{l}{\textit{Scripts de Python:}} \\
+\addlinespace
+\texttt{05\_analisis\_entorno\_urbano.py} & Correlación entre infraestructura de frentes de manzana (alumbrado, banquetas) y delitos. \\
+\texttt{08\_ageb\_vs\_delitos.py} & Correlación AGEB: negocios (DENUE) por categoría vs.\ tipos de delito por zona geográfica. \\
+\texttt{09\_niveledu\_vs\_delitos.py} & Correlación entre nivel educativo promedio (ENVIPE) y tipos de delitos por UPM. \\
+\texttt{10\_individuo\_vs\_delitos.py} & Perfil de la víctima: pirámide de victimización, heatmap de riesgo por edad/sexo, top delitos por sexo. \\
+\midrule
+\multicolumn{2}{l}{\textit{Imágenes --- Entorno Urbano:}} \\
+\addlinespace
+\texttt{analisis\_entorno\_urbano\_gdl.png} & Correlación alumbrado/banquetas vs.\ delitos. \\
+\texttt{guadalajara\_seguridad.png} & Mapa de seguridad general. \\
+\midrule
+\multicolumn{2}{l}{\textit{Imágenes --- Negocios vs.\ Delitos (neg\_*):}} \\
+\addlinespace
+\texttt{neg\_01\_heatmap\_pearson.png} & Heatmap Pearson: categoría DENUE vs.\ delito. \\
+\texttt{neg\_02\_heatmap\_pvalores.png} & Significancia estadística (p-valores). \\
+\texttt{neg\_03\_scatter\_top\_pares.png} & Scatter de los 8 pares más correlacionados. \\
+\texttt{neg\_04\_ranking\_correlaciones.png} & Ranking de categorías vs.\ total de delitos. \\
+\midrule
+\multicolumn{2}{l}{\textit{Imágenes --- Nivel Educativo vs.\ Delitos (edu\_*):}} \\
+\addlinespace
+\texttt{edu\_01\_heatmap\_spearman.png} & Heatmap Spearman: educación vs.\ delito. \\
+\texttt{edu\_02\_heatmap\_pvalores.png} & Significancia estadística. \\
+\texttt{edu\_03\_scatter\_top\_pares.png} & Scatter de pares más correlacionados. \\
+\texttt{edu\_04\_ranking\_heatmap.png} & Ranking + mapa completo. \\
+\midrule
+\multicolumn{2}{l}{\textit{Imágenes --- Perfil del Individuo (ind\_*):}} \\
+\addlinespace
+\texttt{ind\_01\_piramide\_victimizacion.png} & Pirámide por edad y sexo. \\
+\texttt{ind\_02\_heatmap\_riesgo.png} & Heatmap de riesgo específico. \\
+\texttt{ind\_03\_top\_delitos\_sexo.png} & Top 5 delitos por sexo. \\
+\texttt{ind\_04\_evolucion\_vida.png} & Distribución de delitos a lo largo de la vida. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ─────────────────────────────────────────────────────────────────────────
+\subsection{\texttt{05\_movilidad\_vial/}}
+% ─────────────────────────────────────────────────────────────────────────
+
+\textbf{Propósito:} Modelado de la red vial de Guadalajara con OSMnx para calcular tiempos de traslado, velocidades por segmento y rutas óptimas de patrullaje policial.
+
+\begin{table}[h!]
+\centering
+\small
+\begin{tabular}{p{6.5cm} p{7.5cm}}
+\toprule
+\textbf{Archivo} & \textbf{Descripción} \\
+\midrule
+\multicolumn{2}{l}{\textit{Scripts de Python:}} \\
+\addlinespace
+\texttt{final.py} & Módulo principal de rutas óptimas: carga la red vial, asigna costos por semáforo y calcula el \textit{shortest path} entre dos coordenadas. \\
+\texttt{velocidad.py} & Descarga la red vial, asigna velocidades promedio y genera circuitos de tiempos entre las colonias con más delitos. \\
+\texttt{velomapcalor.py} & Renderiza un mapa de calor de la red vial coloreada por velocidad de circulación. \\
+\midrule
+\multicolumn{2}{l}{\textit{Imágenes de resultados:}} \\
+\addlinespace
+\texttt{ruta\_optima\_gdl.png} & Ruta óptima calculada en Guadalajara. \\
+\texttt{ruta\_optima\_morelia*.png} & Pruebas de ruta en Morelia. \\
+\texttt{circuito\_tiempos.png} & Circuito de patrullaje con tiempos. \\
+\texttt{circuito\_patrullaje*.png} & Variantes del circuito de patrullaje. \\
+\texttt{circuito\_optimo\_claro.png} & Versión clara del circuito óptimo. \\
+\texttt{comparativa\_rutas\_semaforos.png} & Comparativa de rutas con/sin semáforos. \\
+\texttt{mapa\_calor\_visible.png} & Heatmap de velocidades en la red vial. \\
+\texttt{mapa\_velocidades\_puro\_legible.png} & Mapa de velocidades legible. \\
+\texttt{mapa\_velocidad\_promedio\_semaforos.png} & Velocidades + ubicación de semáforos. \\
+\texttt{guadalajara\_verde\_agua\_semaforos.png} & Mapa estilizado con semáforos. \\
+\texttt{zapopan\_*.png} & Mapas de extensión a Zapopan. \\
+\texttt{plaza a glorieta.png} & Ruta ejemplo: Plaza a Glorieta. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ─────────────────────────────────────────────────────────────────────────
+\subsection{\texttt{06\_pruebas/}}
+% ─────────────────────────────────────────────────────────────────────────
+
+\textbf{Propósito:} Scripts experimentales y de prueba rápida usados durante el desarrollo. No forman parte del flujo de trabajo final, pero se conservan como referencia.
+
+\begin{table}[h!]
+\centering
+\small
+\begin{tabular}{p{6cm} p{8cm}}
+\toprule
+\textbf{Archivo} & \textbf{Descripción} \\
+\midrule
+\texttt{scratch.py / scratch2.py / scratch3.py} & Fragmentos de código rápido para verificar lectura de CSVs y exploración de columnas. \\
+\addlinespace
+\texttt{codigos\_prueba\_antiguos/} & Subcarpeta con prototipos anteriores: pruebas de mapas (\texttt{test\_mapa.py}), clustering (\texttt{kmean.py}), comparativa de grafos (\texttt{grafoscompara.py}), visualización de Zapopan, etc. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ═══════════════════════════════════════════════════════════════════════════
+\section{Carpetas Auxiliares}
+% ═══════════════════════════════════════════════════════════════════════════
+
+\subsection{\texttt{base\_datos/}}
+Contiene las \textbf{fuentes de datos originales} descargadas (archivos ZIP y descomprimidos):
+\begin{itemize}[nosep]
+    \item \texttt{bd\_envipe\_2025\_csv/} --- Bases completas de la ENVIPE (THogar, TMod\_Vic, TPer\_Vic1, TPer\_Vic2, TSDem, TVivienda).
+    \item \texttt{denue\_14\_csv(1)/} --- DENUE de Jalisco con conjunto de datos, diccionario y metadatos.
+    \item \texttt{14\_Frentes\_INV2020\_shp(1)/} --- Shapefile del Inventario Nacional de Vivienda (frentes de manzana).
+    \item \texttt{14\_Manzanas\_INV2020\_shp/} --- Shapefile de manzanas + indicadores de entorno urbano.
+    \item \texttt{guadalajara\_AGEB/} --- Shapefile de Áreas Geoestadísticas Básicas de Guadalajara.
+    \item \texttt{702825218812\_s/} --- Catálogos y metadatos adicionales del INEGI.
+\end{itemize}
+
+\subsection{\texttt{base de datos para prueba/}}
+Versión inicial del proyecto con copias de las bases ENVIPE y los primeros 3 scripts de análisis. Se usó como espacio de desarrollo temprano antes de la reorganización.
+
+\subsection{\texttt{guadalajara\_AGEB/}}
+Shapefile de las AGEB de Guadalajara (archivos \texttt{.shp}, \texttt{.dbf}, \texttt{.prj}, \texttt{.shx}, \texttt{.fix}, \texttt{.qix}). Es referenciado directamente por los scripts que hacen análisis a nivel AGEB.
+
+\subsection{\texttt{cache/} y \texttt{redes/}}
+\begin{itemize}[nosep]
+    \item \texttt{cache/} --- Archivos JSON generados automáticamente por \texttt{osmnx} para evitar descargas repetidas de OpenStreetMap.
+    \item \texttt{redes/} --- Grafos de red vial serializados en formato \texttt{.pkl} (Guadalajara y Morelia) para carga rápida.
+\end{itemize}
+
+\subsection{\texttt{venv/} y \texttt{env\_osmnx/}}
+Entornos virtuales de Python. Contienen las dependencias instaladas del proyecto. No es necesario incluirlos en el comprimido si se proporciona un \texttt{requirements.txt}.
+
+% ═══════════════════════════════════════════════════════════════════════════
+\section{Archivos en la Raíz del Proyecto}
+% ═══════════════════════════════════════════════════════════════════════════
+
+\begin{table}[h!]
+\centering
+\small
+\begin{tabular}{p{5.5cm} p{8.5cm}}
+\toprule
+\textbf{Archivo} & \textbf{Descripción} \\
+\midrule
+\texttt{iieg\_2023.csv} & Incidencia delictiva georreferenciada del IIEG (2023). \\
+\texttt{gdl\_delitos.csv} & ENVIPE: módulo de delitos filtrado para Guadalajara. \\
+\texttt{gdl\_victimas.csv} & ENVIPE: perfil de víctimas (Guadalajara). \\
+\texttt{gdl\_sdem.csv} & ENVIPE: datos sociodemográficos (Guadalajara). \\
+\texttt{gdl\_percepcion.csv} & ENVIPE: percepción de seguridad (Guadalajara). \\
+\texttt{gdl\_denue.csv} & DENUE filtrado para Guadalajara con coordenadas. \\
+\texttt{inv\_frentes.csv} & Inventario de frentes de manzana (INV 2020). \\
+\texttt{T*.csv} & Bases ENVIPE nacionales originales. \\
+\texttt{RESAGEBURB\_14CSV20.csv} & Censo ITER por AGEB (Jalisco). \\
+\texttt{metadatos\_denue.txt} & Descripción de campos del DENUE. \\
+\addlinespace
+\texttt{reporte\_proyecto.tex/.pdf} & Reporte técnico del proyecto. \\
+\texttt{GUIA\_DEL\_PROYECTO.tex/.pdf} & \textbf{Este documento.} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ═══════════════════════════════════════════════════════════════════════════
+\section{Orden de Ejecución Recomendado}
+% ═══════════════════════════════════════════════════════════════════════════
+
+Para reproducir el análisis desde cero, ejecute los scripts en este orden:
+
+\begin{enumerate}
+    \item \texttt{01\_preparacion\_datos/01\_preparar\_datos.py} --- Genera los CSV procesados.
+    \item \texttt{01\_preparacion\_datos/04\_mas\_datos.py} --- Agrega variables del Censo ITER.
+    \item \texttt{02\_correlaciones\_generales/02\_analisis\_correlacion.py} --- Exploración inicial.
+    \item \texttt{02\_correlaciones\_generales/03\_matriz\_correlacion.py} --- Matrices de correlación.
+    \item \texttt{02\_correlaciones\_generales/06\_correlacion.py} --- Correlaciones con alumbrado.
+    \item \texttt{02\_correlaciones\_generales/07\_correlaciones.py} --- Validación Spearman + Moran.
+    \item \texttt{03\_analisis\_geoespacial/03\_mapa\_denue\_heatmap.py} --- Heatmap DENUE + delitos.
+    \item \texttt{03\_analisis\_geoespacial/mapacalor.py} --- Mapa de calor por colonias.
+    \item \texttt{04\_analisis\_sociodemografico/05\_analisis\_entorno\_urbano.py} --- Entorno urbano.
+    \item \texttt{04\_analisis\_sociodemografico/08\_ageb\_vs\_delitos.py} --- Negocios vs.\ delitos.
+    \item \texttt{04\_analisis\_sociodemografico/09\_niveledu\_vs\_delitos.py} --- Educación vs.\ delitos.
+    \item \texttt{04\_analisis\_sociodemografico/10\_individuo\_vs\_delitos.py} --- Perfil víctima.
+    \item \texttt{05\_movilidad\_vial/velomapcalor.py} --- Mapa de velocidades.
+    \item \texttt{05\_movilidad\_vial/velocidad.py} --- Circuitos de tiempos.
+    \item \texttt{05\_movilidad\_vial/final.py} --- Rutas óptimas de patrullaje.
+\end{enumerate}
+
+\textbf{Nota:} Los scripts de las carpetas 03--05 requieren que los CSV procesados (generados en el paso 1) existan en su carpeta respectiva. Ya se incluyen copias locales para facilitar la ejecución independiente de cada módulo.
+
+% ═══════════════════════════════════════════════════════════════════════════
+\section{Dependencias de Python}
+% ═══════════════════════════════════════════════════════════════════════════
+
+Las principales bibliotecas utilizadas son:
+
+\begin{table}[h!]
+\centering
+\small
+\begin{tabular}{l l}
+\toprule
+\textbf{Biblioteca} & \textbf{Uso} \\
+\midrule
+\texttt{pandas} & Manipulación y limpieza de datos tabulares. \\
+\texttt{numpy} & Operaciones numéricas y matriciales. \\
+\texttt{matplotlib} & Generación de gráficas y visualizaciones. \\
+\texttt{seaborn} & Heatmaps y visualización estadística. \\
+\texttt{scipy} & Pruebas estadísticas (Pearson, Spearman). \\
+\texttt{geopandas} & Manejo de datos geoespaciales (shapefiles). \\
+\texttt{osmnx} & Descarga y análisis de redes viales (OpenStreetMap). \\
+\texttt{networkx} & Algoritmos de grafos (rutas óptimas). \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\end{document}

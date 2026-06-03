@@ -1,0 +1,106 @@
+Tipo A,Tipo B,r Pearson
+Fraude bancario,Robo banco/cajero,0.982
+Robo accesorios,Robo vivienda,0.981
+Amenazas,Lesiones,0.977
+Delito sexual,Robo accesorios,0.977
+Amenazas,Delito sexual,0.976
+Amenazas,Robo accesorios,0.975
+Delito sexual,Lesiones,0.972
+Delito sexual,Robo calle,0.972
+Delito sexual,Robo vivienda,0.969
+Delito sexual,Fraude bancario,0.966
+Lesiones,Robo accesorios,0.966
+Amenazas,Fraude bancario,0.965
+Amenazas,Robo vivienda,0.964
+Robo accesorios,Robo calle,0.964
+Fraude bancario,Robo vivienda,0.961
+Amenazas,Extorsión,0.96
+Amenazas,Robo calle,0.957
+Amenazas,Robo banco/cajero,0.956
+Delito sexual,Extorsión,0.955
+Delito sexual,Robo banco/cajero,0.952
+Delito sexual,Homicidio familiar,0.951
+Lesiones,Robo calle,0.95
+Homicidio familiar,Lesiones,0.949
+Amenazas,Homicidio familiar,0.949
+Extorsión,Fraude bancario,0.948
+Lesiones,Robo vivienda,0.948
+Extorsión,Robo calle,0.945
+Fraude bancario,Robo accesorios,0.944
+Robo calle,Robo vivienda,0.941
+Robo calle,Robo vehículo,0.941
+Fraude bancario,Lesiones,0.939
+Extorsión,Robo banco/cajero,0.939
+Delito sexual,Otro delito,0.939
+Delito sexual,Robo vehículo,0.937
+Robo accesorios,Robo vehículo,0.935
+Homicidio familiar,Robo accesorios,0.935
+Extorsión,Robo accesorios,0.934
+Extorsión,Robo vehículo,0.934
+Amenazas,Robo vehículo,0.934
+Fraude bancario,Homicidio familiar,0.933
+Extorsión,Lesiones,0.932
+Robo banco/cajero,Robo vivienda,0.93
+Fraude bancario,Otro delito,0.93
+Homicidio familiar,Robo vivienda,0.929
+Lesiones,Robo banco/cajero,0.927
+Extorsión,Robo vivienda,0.926
+Homicidio familiar,Robo calle,0.926
+Robo vehículo,Robo vivienda,0.922
+Fraude bancario,Robo calle,0.919
+Robo accesorios,Robo banco/cajero,0.918
+Extorsión,Homicidio familiar,0.915
+Amenazas,Otro delito,0.912
+Homicidio familiar,Robo banco/cajero,0.911
+Lesiones,Otro delito,0.909
+Homicidio familiar,Otro delito,0.909
+Lesiones,Robo vehículo,0.907
+Homicidio familiar,Robo vehículo,0.903
+Otro delito,Robo banco/cajero,0.902
+Robo banco/cajero,Robo calle,0.902
+Otro delito,Robo vivienda,0.9
+Extorsión,Otro delito,0.898
+Fraude bancario,Robo vehículo,0.895
+Fraude bancario,Robo transporte,0.894
+Otro delito,Robo accesorios,0.893
+Robo banco/cajero,Robo vehículo,0.886
+Otro delito,Robo calle,0.884
+Robo transporte,Robo vivienda,0.865
+Amenazas,Robo transporte,0.859
+Robo banco/cajero,Robo transporte,0.844
+Extorsión,Robo transporte,0.839
+Robo accesorios,Robo transporte,0.834
+Otro delito,Robo vehículo,0.829
+Lesiones,Robo transporte,0.826
+Homicidio familiar,Robo transporte,0.824
+Delito sexual,Robo transporte,0.815
+Otro delito,Robo transporte,0.799
+Robo calle,Robo transporte,0.788
+Extorsión,Robo negocio,0.782
+Robo negocio,Robo transporte,0.759
+Robo banco/cajero,Robo negocio,0.757
+Fraude bancario,Robo negocio,0.754
+Robo transporte,Robo vehículo,0.75
+Otro delito,Robo negocio,0.722
+Amenazas,Robo negocio,0.703
+Lesiones,Robo negocio,0.699
+Homicidio familiar,Robo negocio,0.68
+Delito sexual,Robo negocio,0.679
+Robo calle,Robo negocio,0.64
+Robo negocio,Robo vivienda,0.63
+Robo vivienda,Secuestro,0.616
+Robo accesorios,Robo negocio,0.615
+Robo transporte,Secuestro,0.596
+Fraude bancario,Secuestro,0.593
+Robo negocio,Robo vehículo,0.582
+Robo accesorios,Secuestro,0.58
+Amenazas,Secuestro,0.574
+Delito sexual,Secuestro,0.57
+Homicidio familiar,Secuestro,0.568
+Robo vehículo,Secuestro,0.567
+Robo banco/cajero,Secuestro,0.565
+Otro delito,Secuestro,0.565
+Extorsión,Secuestro,0.562
+Lesiones,Secuestro,0.525
+Robo calle,Secuestro,0.518
+Robo negocio,Secuestro,0.449

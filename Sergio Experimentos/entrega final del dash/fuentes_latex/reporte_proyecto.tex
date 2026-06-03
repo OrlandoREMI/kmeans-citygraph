@@ -1,0 +1,88 @@
+\documentclass[12pt, a4paper]{article}
+
+% Paquetes esenciales
+\usepackage[utf8]{inputenc}
+\usepackage[spanish, es-tabla]{babel}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{float}
+\usepackage{xcolor}
+
+% Configuración de márgenes
+\geometry{top=2.5cm, bottom=2.5cm, left=3cm, right=3cm}
+
+\title{\textbf{Análisis Geoespacial, Sociodemográfico y de Movilidad de la Incidencia Delictiva en Guadalajara}}
+\author{Reporte de Proyecto}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\begin{center}
+{\Large \textbf{Maestría en Ciencias Robóticas}} \\
+{\large (MCR)} \\
+\vspace{0.8cm}
+
+{\large Centro de Investigación en Matemáticas} \\
+{\large (CIMAT Sede Zacatecas)} \\
+\vspace{1.5cm}
+
+{\large Presentado por:} \\
+{\Large Sergio Bernardo Robles Delgado} \\
+\end{center}
+
+\begin{abstract}
+El presente reporte sintetiza el flujo de trabajo, metodologías y resultados obtenidos a partir del cruce de bases de datos de incidencia delictiva, encuestas de victimización y datos geoespaciales. El objetivo principal es identificar factores urbanos, demográficos y de movilidad que se correlacionen con el fenómeno criminal en el Área Metropolitana de Guadalajara, proporcionando evidencia estadística y visual para la toma de decisiones estratégicas.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+\section{Introducción}
+El análisis criminal contemporáneo requiere un enfoque multidisciplinario. En este proyecto se construyó un ecosistema de datos integrando registros del Instituto de Información Estadística y Geográfica (IIEG), el Directorio Estadístico Nacional de Unidades Económicas (DENUE), la Encuesta Nacional de Victimización y Percepción sobre Seguridad Pública (ENVIPE) y redes viales de OpenStreetMap (OSMnx). El cruce de estos datos permite no solo mapear el delito, sino comprender sus causas subyacentes relacionadas con la dinámica económica y social del entorno.
+
+\section{Metodología y Procesamiento de Datos}
+La primera fase del proyecto (\textit{Preparación de Datos}) se centró en la recolección, limpieza y homologación de las fuentes de datos. Se desarrollaron scripts en Python utilizando bibliotecas como \texttt{pandas} y \texttt{geopandas} para consolidar las siguientes bases:
+\begin{itemize}
+    \item \textbf{Delitos (IIEG):} Incidencia delictiva georreferenciada.
+    \item \textbf{DENUE (INEGI):} Ubicación y giro de unidades económicas (Puntos de interés o POIs).
+    \item \textbf{ENVIPE (INEGI):} Módulos sociodemográficos, perfil de víctimas y percepción de inseguridad.
+    \item \textbf{Censo (AGEB):} Variables poblacionales a nivel de Área Geoestadística Básica.
+\end{itemize}
+
+\section{Análisis Estadístico y Correlaciones}
+Para identificar variables predictoras de la delincuencia, se construyeron matrices de correlación utilizando coeficientes paramétricos (Pearson) y no paramétricos (Spearman). 
+\subsection{Correlaciones Generales}
+Se evaluó la relación lineal y monotónica entre el entorno urbano y los delitos. Las matrices triangulares y los mapas de calor de \textit{p-valores} confirmaron la significancia estadística de la presencia de ciertos tipos de negocios y niveles de iluminación sobre la varianza de la incidencia delictiva local.
+
+\section{Resultados Sociodemográficos y Perfil de la Víctima}
+El cruce de los datos de ENVIPE y IIEG arrojó importantes hallazgos sobre la vulnerabilidad ciudadana (\textit{Teoría del Objetivo Expuesto}):
+\begin{itemize}
+    \item \textbf{Nivel Educativo vs. Delito:} Se mapeó la relación entre la escolaridad promedio de las Áreas Geoestadísticas y los tipos de delitos más frecuentes, revelando cómo el nivel educativo moldea el tipo de victimización (ej. fraudes vs. asaltos).
+    \item \textbf{Perfil del Individuo:} A través de pirámides de victimización, se identificaron los segmentos demográficos (edad y sexo) con mayor riesgo ante delitos específicos, proporcionando un mapa de riesgo sociodemográfico.
+\end{itemize}
+
+\section{Análisis Geoespacial y Entorno Urbano}
+A nivel espacial, el proyecto desarrolló potentes visualizaciones para dimensionar el fenómeno:
+\begin{itemize}
+    \item \textbf{Mapas de Calor (Heatmaps):} Identificación de clústeres críticos (puntos calientes) de actividad criminal y su superposición con densidades comerciales (DENUE).
+    \item \textbf{Análisis de Entorno por AGEB:} Dispersión de delitos frente a la concentración de negocios (ej. bares, tiendas de conveniencia), encontrando pares con altas correlaciones positivas.
+\end{itemize}
+\textit{Nota: Las figuras generadas (como \texttt{guadalajara\_denue\_heatmap.png} y \texttt{heatmap\_critico.png}) documentan visualmente estos patrones.}
+
+\section{Movilidad Vial y Patrullaje}
+La última fase del análisis se concentró en la infraestructura vial utilizando la biblioteca \texttt{osmnx}. 
+\subsection{Redes, Tiempos y Velocidades}
+Se modeló la red vial de Guadalajara (nodos y aristas) asignando velocidades promedio y penalizaciones por semáforos. A partir de esto, se generaron grafos computacionales para calcular los tiempos de traslado óptimos y crear mapas de calor de las velocidades de circulación.
+\subsection{Optimización de Rutas}
+El algoritmo permite calcular las rutas óptimas (\textit{Shortest Path}) entre zonas seguras y focos rojos, lo cual tiene aplicaciones directas para optimizar los circuitos de patrullaje policial, minimizando tiempos de respuesta.
+
+\section{Conclusiones y Trabajo Futuro}
+El desarrollo integral de este proyecto demuestra una fuerte interdependencia entre el tejido comercial, la configuración sociodemográfica y la movilidad con respecto a las tasas de criminalidad. El modelo estructurado permite realizar análisis predictivos y planear políticas públicas focalizadas.
+\\
+Para trabajos futuros, se sugiere la implementación de modelos de \textit{Machine Learning} (ej. Random Forest, regresiones espaciales) para transitar del análisis descriptivo y correlacional, a la predicción geoespacial avanzada del delito.
+
+\end{document}

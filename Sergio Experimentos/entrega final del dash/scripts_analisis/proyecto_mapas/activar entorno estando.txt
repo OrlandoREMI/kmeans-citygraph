@@ -1,0 +1,3 @@
+activar entorno estando en l carpeta de est archivo 
+
+source env_mapas/bin/activate

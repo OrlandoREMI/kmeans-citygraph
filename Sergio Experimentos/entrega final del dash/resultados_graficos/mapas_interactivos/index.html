@@ -1,0 +1,1555 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard Urbano — Guadalajara</title>
+  
+  <!-- CSS Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <!-- Google Font Outfit -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- UMD Core Runtimes (CDN) -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  
+  <!-- Plugins & Graficadores -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  
+  <style>
+    :root {
+      --bg-dark: #08090d;
+      --bg-card: #0f111a;
+      --bg-card-hover: #141724;
+      --border-color: #1f2335;
+      --text-main: #e2e8f0;
+      --text-muted: #747d8c;
+      --primary: #ff4757;
+      --primary-hover: #ff6b81;
+      --secondary: #2f7bf6;
+      --accent: #ffa502;
+      --success: #2ed573;
+    }
+    
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: var(--bg-dark);
+      color: var(--text-main);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    
+    #root {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+    }
+    
+    /* ── BARRA DE CARGA GLOBAAL ── */
+    #loading-screen {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: var(--bg-dark);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      z-index: 9999; transition: opacity 0.5s;
+    }
+    .spinner {
+      width: 50px; height: 50px; border: 4px solid var(--border-color);
+      border-top-color: var(--primary); border-radius: 50%;
+      animation: spin 1s linear infinite; margin-bottom: 16px;
+    }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+    
+    /* ── HEADER PREMIUM ── */
+    header {
+      background: linear-gradient(135deg, #10121b 0%, var(--bg-dark) 100%);
+      border-bottom: 1px solid var(--border-color);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      z-index: 2000;
+      flex-shrink: 0;
+    }
+    header .status-dot {
+      width: 10px; height: 10px; border-radius: 50%; background: var(--success);
+      box-shadow: 0 0 10px var(--success);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0% { transform: scale(0.9); opacity: 0.7; }
+      50% { transform: scale(1.15); opacity: 1; }
+      100% { transform: scale(0.9); opacity: 0.7; }
+    }
+    header h1 {
+      font-size: 18px; font-weight: 800; letter-spacing: 0.5px;
+      background: linear-gradient(90deg, var(--primary), var(--primary-hover), var(--accent));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    header .meta {
+      font-size: 11px; color: var(--text-muted); margin-left: auto;
+      background: #141724; border: 1px solid var(--border-color);
+      padding: 4px 12px; border-radius: 20px; font-weight: 600;
+    }
+    
+    /* ── WORKSPACE ── */
+    #workspace {
+      display: flex;
+      flex: 1;
+      height: 0;
+      overflow: hidden;
+    }
+    
+    /* ── SIDEBAR CON REACT TABS ── */
+    aside {
+      width: 420px;
+      background: var(--bg-card);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    
+    /* Pestañas */
+    .tab-bar {
+      display: flex;
+      background: #08090d;
+      border-bottom: 1px solid var(--border-color);
+      flex-shrink: 0;
+      overflow-x: auto;
+    }
+    .tab-btn {
+      flex: 1; min-width: 75px; text-align: center; padding: 12px 6px;
+      font-size: 10px; font-weight: 700; color: var(--text-muted);
+      cursor: pointer; text-transform: uppercase; letter-spacing: 0.8px;
+      transition: all 0.3s; border: none; background: transparent;
+      border-bottom: 3px solid transparent; outline: none;
+    }
+    .tab-btn:hover { color: #ffffff; background: #121522; }
+    .tab-btn.active {
+      color: #ffffff; border-bottom-color: var(--primary);
+      background: var(--bg-card);
+    }
+    
+    /* Contenedor de scroll */
+    .scroll-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      scrollbar-width: thin;
+      scrollbar-color: #2d324d #08090d;
+    }
+    .scroll-container::-webkit-scrollbar {
+      width: 8px;
+    }
+    .scroll-container::-webkit-scrollbar-track {
+      background: #08090d;
+    }
+    .scroll-container::-webkit-scrollbar-thumb {
+      background: #2d324d;
+      border-radius: 4px;
+    }
+    .scroll-container::-webkit-scrollbar-thumb:hover {
+      background: var(--primary);
+    }
+    
+    .temporal-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      width: 100%;
+    }
+    .span-2 {
+      grid-column: span 2;
+    }
+    @media (max-width: 1200px) {
+      .temporal-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .span-2 {
+        grid-column: span 1;
+      }
+    }
+    @media (max-width: 768px) {
+      .temporal-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Tarjetas/Secciones */
+    .sec-card {
+      background: #121420; border: 1px solid var(--border-color);
+      border-radius: 12px; padding: 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    .sec-card h3 {
+      font-size: 11px; font-weight: 800; text-transform: uppercase;
+      color: #cbd5e1; margin-bottom: 12px; letter-spacing: 1px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    
+    /* Formulario */
+    select, input[type=text] {
+      width: 100%; background: #08090d; color: var(--text-main);
+      border: 1px solid #2d324d; border-radius: 8px;
+      padding: 10px 12px; font-size: 13px; font-family: inherit;
+      outline: none; transition: all 0.3s;
+    }
+    select:focus, input[type=text]:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 8px rgba(255, 71, 87, 0.25);
+    }
+    
+    .action-btn {
+      width: 100%; padding: 12px;
+      background: linear-gradient(135deg, var(--primary) 0%, #ff6b81 100%);
+      color: #ffffff; border: none; border-radius: 8px;
+      font-size: 13px; font-weight: 700; cursor: pointer;
+      font-family: inherit; transition: all 0.3s;
+      box-shadow: 0 4px 12px rgba(255, 71, 87, 0.3);
+      display: flex; justify-content: center; align-items: center; gap: 8px;
+    }
+    .action-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(255, 71, 87, 0.45);
+    }
+    .action-btn:disabled {
+      background: var(--border-color); color: var(--text-muted);
+      cursor: not-allowed; transform: none; box-shadow: none;
+    }
+    
+    /* Indicadores */
+    .stat-row { display: flex; flex-direction: column; gap: 8px; }
+    .stat-badge {
+      background: #08090d; border: 1px solid var(--border-color);
+      border-radius: 8px; padding: 12px; transition: border-color 0.3s;
+    }
+    .stat-badge:hover { border-color: #2a2e45; }
+    .stat-badge .title { font-size: 11px; color: var(--text-muted); font-weight: 600; margin-bottom: 2px; }
+    .stat-badge .value { font-size: 22px; font-weight: 800; color: #ffffff; }
+    .stat-badge .subtitle { font-size: 10px; color: var(--primary); margin-top: 2px; }
+    
+    /* Leyenda */
+    .gradient-bar { height: 8px; border-radius: 4px; margin: 8px 0 4px; }
+    .legend-text { display: flex; justify-content: space-between; font-size: 10px; color: var(--text-muted); font-weight: 700; }
+    
+    .biv-legend-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; width: 84px; height: 84px; margin: 8px auto; }
+    .biv-legend-cell { border-radius: 2px; }
+    
+    /* Scatter */
+    #scatter-canvas { width: 100%; height: 150px; background: #08090d; border: 1px solid var(--border-color); border-radius: 8px; }
+    
+    /* Sliders */
+    input[type=range] {
+      -webkit-appearance: none; width: 100%; background: #08090d;
+      height: 6px; border-radius: 3px; outline: none; margin: 8px 0;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none; appearance: none; width: 16px; height: 16px;
+      border-radius: 50%; background: var(--primary); cursor: pointer; transition: 0.2s;
+    }
+    input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.25); }
+    
+    /* Listas */
+    .list-wrapper { max-height: 480px; overflow-y: auto; padding-right: 4px; }
+    .list-item {
+      background: #08090d; border: 1px solid var(--border-color);
+      border-radius: 8px; padding: 10px 14px; margin-bottom: 6px;
+      display: flex; justify-content: space-between; align-items: center;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .list-item:hover {
+      border-color: var(--primary); background: var(--bg-card-hover);
+      transform: translateX(4px);
+    }
+    .list-item .name { font-size: 12px; font-weight: 700; color: #f1f5f9; }
+    .list-item .score {
+      font-size: 11px; background: rgba(255, 71, 87, 0.12);
+      color: var(--primary); border: 1px solid rgba(255, 71, 87, 0.25);
+      padding: 2px 8px; border-radius: 20px; font-weight: 800;
+    }
+    
+    /* ── VISTA DEL MAPA ── */
+    #map-view { flex: 1; z-index: 1; background: var(--bg-dark); }
+    
+    /* ── VISTA DEL ANALISTA DE IA ── */
+    .ai-chat { display: flex; flex-direction: column; gap: 12px; }
+    .settings-trigger {
+      font-size: 11px; color: var(--text-muted); cursor: pointer;
+      text-align: right; text-decoration: underline; margin-bottom: 4px;
+    }
+    .ai-report {
+      background: #0a0c16; border: 1px solid #1e295d; border-radius: 8px;
+      padding: 16px; min-height: 200px; font-size: 13px; line-height: 1.6;
+      color: #cbd5e1; overflow-y: auto; max-height: 380px;
+      box-shadow: inset 0 2px 8px rgba(0,0,0,0.5);
+    }
+    .ai-report h1, .ai-report h2, .ai-report h3 {
+      color: #ffffff; font-weight: 700; margin: 12px 0 6px 0; font-size: 14px;
+    }
+    .ai-report h1:first-child, .ai-report h2:first-child, .ai-report h3:first-child { margin-top: 0; }
+    .ai-report p { margin-bottom: 10px; }
+    .ai-report ul, .ai-report ol { padding-left: 18px; margin-bottom: 10px; }
+    .ai-report li { margin-bottom: 4px; }
+    .ai-report strong { color: var(--accent); }
+    
+    /* Animación de carga de IA */
+    .glowing-loader {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; padding: 40px 0; gap: 12px;
+    }
+    .pulse-glow {
+      width: 24px; height: 24px; border-radius: 50%; background: var(--secondary);
+      box-shadow: 0 0 15px var(--secondary);
+      animation: pulse 1.5s infinite ease-in-out;
+    }
+    
+    /* Modal de Configuración */
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.85); display: flex; align-items: center;
+      justify-content: center; z-index: 5000;
+    }
+    .modal-card {
+      background: var(--bg-card); border: 1px solid var(--border-color);
+      border-radius: 12px; width: 90%; max-width: 440px; padding: 24px;
+      display: flex; flex-direction: column; gap: 16px;
+    }
+    .modal-card h2 { font-size: 16px; font-weight: 800; color: #ffffff; }
+    
+    /* Ajuste de los Charts */
+    .chart-box { position: relative; height: 150px; width: 100%; margin-top: 8px; }
+    
+  </style>
+</head>
+<body>
+
+  <!-- PANTALLA DE CARGA -->
+  <div id="loading-screen">
+    <div class="spinner"></div>
+    <h2 style="font-weight: 700; font-size: 15px; letter-spacing: 0.5px;">Cargando Servidor de Analítica Geoespacial...</h2>
+    <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Procesando mapas, censos y capas comunitarias</p>
+  </div>
+
+  <div id="root"></div>
+
+  <!-- SCRIPT REACT CON BABEL -->
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    // Colores Bivariados 3x3
+    const BIVCOLS = [
+      ["#2f7bf6", "#b0a8cb", "#8e44ad"],
+      ["#a8c8e8", "#b0b0b0", "#c0392b"],
+      ["#181a26", "#a87050", "#ff4757"]
+    ];
+
+    function App() {
+      const [loading, setLoading] = useState(true);
+      const [activeTab, setActiveTab] = useState('simple');
+      const [payload, setPayload] = useState(null);
+      const [showConfig, setShowConfig] = useState(false);
+      const [apiKey, setApiKey] = useState(localStorage.getItem('gemini_key') || '');
+      
+      // Instancia de Mapa Leaflet guardada en ref para evitar re-inicializaciones
+      const mapRef = useRef(null);
+      const layerRef = useRef(null);
+      const heatRef = useRef(null);
+      const markersRef = useRef([]);
+
+      // Cargar datos del Servidor al arrancar
+      useEffect(() => {
+        fetch("/api/data")
+          .then(res => res.json())
+          .then(data => {
+            setPayload(data);
+            setLoading(false);
+            const screen = document.getElementById("loading-screen");
+            if (screen) screen.style.opacity = 0;
+            setTimeout(() => { if (screen) screen.style.display = "none"; }, 500);
+          })
+          .catch(err => {
+            console.error("Error al cargar datos de la API:", err);
+            alert("No se pudo conectar con el servidor backend Python. Asegúrate de que app.py esté corriendo.");
+          });
+      }, []);
+
+      // Inicializar Leaflet
+      useEffect(() => {
+        if (loading) return;
+        
+        mapRef.current = L.map("map-view", { zoomControl: false }).setView([20.668, -103.347], 12);
+        L.control.zoom({ position: 'bottomright' }).addTo(mapRef.current);
+        
+        L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+          attribution: "© OpenStreetMap, © CARTO"
+        }).addTo(mapRef.current);
+
+        return () => {
+          if (mapRef.current) {
+            mapRef.current.remove();
+            mapRef.current = null;
+          }
+        };
+      }, [loading]);
+
+      // Re-ajustar mapa al cambiar de pestañas
+      useEffect(() => {
+        if (mapRef.current) {
+          setTimeout(() => {
+            if (mapRef.current) mapRef.current.invalidateSize();
+          }, 350);
+        }
+      }, [activeTab]);
+
+      // Guardar API Key
+      const saveApiKey = (key) => {
+        setApiKey(key);
+        localStorage.setItem('gemini_key', key);
+        setShowConfig(false);
+      };
+
+      // Resetear capas secundarias
+      const clearSecondaryLayers = () => {
+        if (heatRef.current && mapRef.current) {
+          mapRef.current.removeLayer(heatRef.current);
+          heatRef.current = null;
+        }
+        markersRef.current.forEach(m => {
+          if (mapRef.current) mapRef.current.removeLayer(m);
+        });
+        markersRef.current = [];
+      };
+
+      if (loading) return null;
+
+      return (
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
+          <header>
+            <div className="status-dot"></div>
+            <h1>Dashboard Urbano de Guadalajara</h1>
+            <div className="meta">ESTADO: API CONECTADA</div>
+          </header>
+
+          <div id="workspace">
+            <aside style={{ 
+              width: activeTab === 'temp' ? '100%' : '420px', 
+              transition: 'width 0.3s ease',
+              borderRight: activeTab === 'temp' ? 'none' : '1px solid var(--border-color)'
+            }}>
+              <div className="tab-bar">
+                <button className={`tab-btn ${activeTab === 'simple' ? 'active' : ''}`} onClick={() => { setActiveTab('simple'); clearSecondaryLayers(); }}>Simple</button>
+                <button className={`tab-btn ${activeTab === 'biv' ? 'active' : ''}`} onClick={() => { setActiveTab('biv'); clearSecondaryLayers(); }}>Bivariado</button>
+                <button className={`tab-btn ${activeTab === 'heat' ? 'active' : ''}`} onClick={() => { setActiveTab('heat'); clearSecondaryLayers(); }}>Calor</button>
+                <button className={`tab-btn ${activeTab === 'temp' ? 'active' : ''}`} onClick={() => { setActiveTab('temp'); clearSecondaryLayers(); }}>Temporal & ENVIPE</button>
+                <button className={`tab-btn ${activeTab === 'cols' ? 'active' : ''}`} onClick={() => { setActiveTab('cols'); clearSecondaryLayers(); }}>Colonias</button>
+                <button className={`tab-btn ${activeTab === 'ai' ? 'active' : ''}`} onClick={() => { setActiveTab('ai'); clearSecondaryLayers(); }} style={{ color: 'var(--accent)' }}>Analista IA</button>
+              </div>
+
+              <div className="scroll-container">
+                {activeTab === 'simple' && (
+                  <SimpleTab 
+                    payload={payload} 
+                    map={mapRef.current} 
+                    layerRef={layerRef}
+                  />
+                )}
+                {activeTab === 'biv' && (
+                  <BivariateTab 
+                    payload={payload} 
+                    map={mapRef.current} 
+                    layerRef={layerRef}
+                  />
+                )}
+                {activeTab === 'heat' && (
+                  <HeatmapTab 
+                    payload={payload} 
+                    map={mapRef.current} 
+                    layerRef={layerRef}
+                    heatRef={heatRef}
+                  />
+                )}
+                {activeTab === 'temp' && (
+                  <TemporalTab 
+                    payload={payload} 
+                    map={mapRef.current} 
+                    layerRef={layerRef}
+                  />
+                )}
+                {activeTab === 'cols' && (
+                  <ColoniasTab 
+                    payload={payload} 
+                    map={mapRef.current} 
+                    layerRef={layerRef}
+                    markersRef={markersRef}
+                  />
+                )}
+                {activeTab === 'ai' && (
+                  <AiAnalystTab 
+                    payload={payload} 
+                    apiKey={apiKey}
+                    openConfig={() => setShowConfig(true)}
+                    map={mapRef.current}
+                    layerRef={layerRef}
+                    markersRef={markersRef}
+                  />
+                )}
+              </div>
+            </aside>
+
+            {/* MAPA */}
+            <div id="map-view" style={{ display: activeTab === 'temp' ? 'none' : 'block' }}></div>
+          </div>
+
+          {/* MODAL CONFIGURACIÓN API KEY */}
+          {showConfig && (
+            <div className="modal-overlay">
+              <div className="modal-card">
+                <h2>Ajustes del Analista de IA (Gemini API)</h2>
+                <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                  Opcional: Si no has configurado la variable de entorno <strong>GEMINI_API_KEY</strong> en tu servidor Python, puedes pegar tu clave directamente aquí. Se guardará de forma segura en tu navegador.
+                </p>
+                <input 
+                  type="text" 
+                  placeholder="Pega tu API Key de Gemini aquí..." 
+                  value={apiKey} 
+                  onChange={(e) => setApiKey(e.target.value)} 
+                />
+                <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                  <button className="action-btn" onClick={() => saveApiKey(apiKey)} style={{ flex: 1 }}>Guardar Clave</button>
+                  <button className="action-btn" onClick={() => setShowConfig(false)} style={{ flex: 1, background: 'var(--border-color)', color: '#fff', boxShadow: 'none' }}>Cancelar</button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // ────────────────────────────────────────────────────────────────
+    // COMPONENTE: PESTAÑA SIMPLE (CHOROPLETH)
+    // ────────────────────────────────────────────────────────────────
+    function SimpleTab({ payload, map, layerRef }) {
+      const allCapas = [...payload.capas_delitos, ...payload.capas_negocios, ...payload.capas_censo, ...payload.capas_urbano];
+      const [selectedCapa, setSelectedCapa] = useState(allCapas[0]);
+      const [stats, setStats] = useState({ total: 0, maxVal: 0, maxAgeb: '' });
+
+      const getStyleColor = (val, max, tipo) => {
+        if (max === 0 || val === 0) return "#151722";
+        const t = Math.min(val / max, 1);
+        if (tipo === "rojo") {
+          if (t < 0.2) return "#2c1318"; if (t < 0.4) return "#501923";
+          if (t < 0.6) return "#801e2b"; if (t < 0.8) return "#bf273c";
+          return "#ff4757";
+        } else if (tipo === "azul") {
+          if (t < 0.2) return "#0c152a"; if (t < 0.4) return "#112349";
+          if (t < 0.6) return "#173770"; if (t < 0.8) return "#2154a6";
+          return "#2f7bf6";
+        } else if (tipo === "naranja") {
+          if (t < 0.2) return "#2b190c"; if (t < 0.4) return "#4d2911";
+          if (t < 0.6) return "#7f4017"; if (t < 0.8) return "#bf5d1d";
+          return "#ffa502";
+        } else {
+          if (t < 0.2) return "#0f2618"; if (t < 0.4) return "#164726";
+          if (t < 0.6) return "#1f6f36"; if (t < 0.8) return "#2fa44f";
+          return "#2ed573";
+        }
+      };
+
+      const getLegendGrad = (tipo) => {
+        if (tipo === "rojo") return "linear-gradient(to right, #151722, #801e2b, #ff4757)";
+        if (tipo === "azul") return "linear-gradient(to right, #151722, #173770, #2f7bf6)";
+        if (tipo === "naranja") return "linear-gradient(to right, #151722, #7f4017, #ffa502)";
+        return "linear-gradient(to right, #151722, #1f6f36, #2ed573)";
+      };
+
+      useEffect(() => {
+        if (!map) return;
+        const vals = payload.datos[selectedCapa] || {};
+        const tipo = payload.paletas[selectedCapa] || "verde";
+        const allVals = Object.values(vals);
+        const max = Math.max(...allVals, 1);
+        
+        const total = allVals.reduce((a, b) => a + b, 0);
+        const maxE = Object.entries(vals).reduce((a, b) => b[1] > a[1] ? b : a, ["", 0]);
+        
+        setStats({ total, maxVal: maxE[1], maxAgeb: "AGEB " + maxE[0] });
+
+        if (layerRef.current) map.removeLayer(layerRef.current);
+
+        layerRef.current = L.geoJSON(payload.geojson, {
+          style: (f) => {
+            const v = vals[f.properties.CVEGEO] || 0;
+            return { fillColor: getStyleColor(v, max, tipo), fillOpacity: v > 0 ? 0.82 : 0.25, color: "#0d0d1a", weight: 0.5 };
+          },
+          onEachFeature: (f, l) => {
+            const v = vals[f.properties.CVEGEO] || 0;
+            l.bindTooltip(`<b>AGEB ${f.properties.CVEGEO}</b><br>${selectedCapa.replace("NEG: ","").replace("CEN: ","").replace("URB: ","")}: <b>${v.toLocaleString("es-MX")}</b>`, { sticky: true });
+          }
+        }).addTo(map);
+
+      }, [selectedCapa, map]);
+
+      return (
+        <div className="tab-content active">
+          <div className="sec-card">
+            <h3>🗺️ Capa Choropleth por AGEB</h3>
+            <select value={selectedCapa} onChange={(e) => setSelectedCapa(e.target.value)}>
+              <optgroup label="🔥 Total Consolidado">
+                <option value="Todos los Delitos">Todos los Delitos IIEG</option>
+              </optgroup>
+              <optgroup label="🔴 Grupos de Delitos">
+                {payload.capas_delitos.filter(c => c.includes("(Grupo)")).map(c => (
+                  <option key={c} value={c}>{c.replace(" (Grupo)", "")}</option>
+                ))}
+              </optgroup>
+              <optgroup label="📌 Delitos Individuales (IIEG)">
+                {payload.capas_delitos.filter(c => !c.includes("(Grupo)") && c !== "Todos los Delitos").map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </optgroup>
+              <optgroup label="🏪 Negocios (DENUE)">
+                {payload.capas_negocios.map(c => <option key={c} value={c}>{c.replace("NEG: ","")}</option>)}
+              </optgroup>
+              <optgroup label="📊 Sociodemográfico (Censo)">
+                {payload.capas_censo.map(c => <option key={c} value={c}>{c.replace("CEN: ","")}</option>)}
+              </optgroup>
+              <optgroup label="🏙️ Entorno Urbano">
+                {payload.capas_urbano.map(c => <option key={c} value={c}>{c.replace("URB: ","")}</option>)}
+              </optgroup>
+            </select>
+          </div>
+
+          <div className="sec-card">
+            <h3>📊 Resumen de la Variable</h3>
+            <div className="stat-row">
+              <div className="stat-badge">
+                <div className="title">Total Registrado en Guadalajara</div>
+                <div className="value">{stats.total.toLocaleString("es-MX")}</div>
+              </div>
+              <div className="stat-badge">
+                <div className="title">Máxima Concentración en un AGEB</div>
+                <div className="value">{stats.maxVal.toLocaleString("es-MX")}</div>
+                <div className="subtitle">{stats.maxAgeb}</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="sec-card">
+            <h3>🎨 Escala de Color</h3>
+            <div className="gradient-bar" style={{ background: getLegendGrad(payload.paletas[selectedCapa] || "verde") }}></div>
+            <div className="legend-text">
+              <span>Bajo / Cero</span>
+              <span>{Math.round(stats.maxVal / 2).toLocaleString("es-MX")}</span>
+              <span>{stats.maxVal.toLocaleString("es-MX")} (Máx)</span>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ────────────────────────────────────────────────────────────────
+    // COMPONENTE: PESTAÑA BIVARIADO (CORRELACIÓN)
+    // ────────────────────────────────────────────────────────────────
+    function BivariateTab({ payload, map, layerRef }) {
+      const [varX, setVarX] = useState(payload.capas_delitos[0]);
+      const allY = [...payload.capas_negocios, ...payload.capas_censo, ...payload.capas_urbano];
+      const [varY, setVarY] = useState(allY[0]);
+      
+      const [stats, setStats] = useState({ r: 0, interp: 'Sin analizar', n: 0, p: 0, color: '#747d8c' });
+
+      const pearson = (xs, ys) => {
+        const n = xs.length; if (n < 3) return 0;
+        const mx = xs.reduce((a, b) => a + b, 0) / n, my = ys.reduce((a, b) => a + b, 0) / n;
+        let num = 0, dx2 = 0, dy2 = 0;
+        for (let i = 0; i < n; i++) {
+          const dx = xs[i] - mx, dy = ys[i] - my;
+          num += dx * dy; dx2 += dx * dx; dy2 += dy * dy;
+        }
+        return (dx2 === 0 || dy2 === 0) ? 0 : num / Math.sqrt(dx2 * dy2);
+      };
+
+      const quantileBin = (v, q33, q66) => {
+        return v <= q33 ? 2 : v <= q66 ? 1 : 0;
+      };
+
+      const runAnalysis = () => {
+        if (!map) return;
+        const vx = payload.datos[varX] || {};
+        const vy = payload.datos[varY] || {};
+        const cvegeos = Object.keys(vx).filter(k => k in vy);
+        const xvals = cvegeos.map(k => vx[k] || 0), yvals = cvegeos.map(k => vy[k] || 0);
+
+        const q33x = [...xvals].sort((a, b) => a - b)[Math.floor(xvals.length * 0.333)] || 0;
+        const q66x = [...xvals].sort((a, b) => a - b)[Math.floor(xvals.length * 0.666)] || 0;
+        const q33y = [...yvals].sort((a, b) => a - b)[Math.floor(yvals.length * 0.333)] || 0;
+        const q66y = [...yvals].sort((a, b) => a - b)[Math.floor(yvals.length * 0.666)] || 0;
+
+        const r = pearson(xvals, yvals);
+        const absR = Math.abs(r);
+        const tStat = r * Math.sqrt((xvals.length - 2) / (1 - r * r + 1e-10));
+        const pVal = 2 * (1 - Math.min(0.9999, Math.abs(tStat) / (Math.abs(tStat) + Math.sqrt(xvals.length - 2))));
+
+        let col = "#747d8c", interp = "Sin correlación aparente (r ≈ 0)";
+        if (absR >= 0.1 && absR < 0.3) { col = "#ffa502"; interp = r > 0 ? "Correlación positiva débil" : "Correlación negativa débil"; }
+        else if (absR >= 0.3 && absR < 0.5) { col = "#ff6b81"; interp = r > 0 ? "Correlación positiva moderada" : "Correlación negativa moderada"; }
+        else if (absR >= 0.5 && absR < 0.7) { col = "#ff4757"; interp = r > 0 ? "Correlación positiva fuerte" : "Correlación negativa fuerte"; }
+        else if (absR >= 0.7) { col = "#ff2e44"; interp = r > 0 ? "Correlación positiva muy fuerte" : "Correlación negativa muy fuerte"; }
+
+        setStats({ r, interp, n: xvals.length, p: pVal, color: col });
+
+        // Pintar Canvas Scatter
+        const canvas = document.getElementById("scatter-canvas");
+        if (canvas) {
+          const ctx = canvas.getContext("2d");
+          const W = canvas.offsetWidth || 280, H = 150, pad = 25;
+          canvas.width = W * window.devicePixelRatio;
+          canvas.height = H * window.devicePixelRatio;
+          ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+          
+          ctx.fillStyle = "#08090d"; ctx.fillRect(0, 0, W, H);
+          if (xvals.length > 0) {
+            const xmin = Math.min(...xvals), xmax = Math.max(...xvals) || 1;
+            const ymin = Math.min(...yvals), ymax = Math.max(...yvals) || 1;
+
+            ctx.strokeStyle = "#1f2335"; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(pad, H - pad); ctx.lineTo(W - pad, H - pad); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(pad, pad); ctx.lineTo(pad, H - pad); ctx.stroke();
+
+            xvals.forEach((xv, i) => {
+              const px = pad + (xv - xmin) / (xmax - xmin + 1e-10) * (W - 2 * pad);
+              const py = (H - pad) - (yvals[i] - ymin) / (ymax - ymin + 1e-10) * (H - 2 * pad);
+              ctx.beginPath(); ctx.arc(px, py, 2.5, 0, Math.PI * 2);
+              ctx.fillStyle = "rgba(255, 71, 87, 0.6)"; ctx.fill();
+            });
+
+            // Línea de regresión
+            const n = xvals.length;
+            const mx = xvals.reduce((a,b)=>a+b,0)/n, my=yvals.reduce((a,b)=>a+b,0)/n;
+            let num=0, den=0;
+            for(let i=0;i<n;i++){{num+=(xvals[i]-mx)*(yvals[i]-my);den+=(xvals[i]-mx)**2;}}
+            const slope=den===0?0:num/den;
+            const intercept=my-slope*mx;
+            
+            const px1=pad, py1=(H-pad)-(slope*xmin+intercept-ymin)/(ymax-ymin+1e-10)*(H-2*pad);
+            const px2=W-pad, py2=(H-pad)-(slope*xmax+intercept-ymin)/(ymax-ymin+1e-10)*(H-2*pad);
+            ctx.beginPath(); ctx.moveTo(px1,py1); ctx.lineTo(px2,py2);
+            ctx.strokeStyle="#2f7bf6"; ctx.lineWidth=2; ctx.stroke();
+          }
+        }
+
+        // Pintar Mapa
+        if (layerRef.current) map.removeLayer(layerRef.current);
+        layerRef.current = L.geoJSON(payload.geojson, {
+          style: (f) => {
+            const k = f.properties.CVEGEO;
+            const row = quantileBin(vy[k] || 0, q33y, q66y);
+            const col = quantileBin(vx[k] || 0, q33x, q66x) === 0 ? 2 : quantileBin(vx[k] || 0, q33x, q66x) === 1 ? 1 : 0;
+            return { fillColor: BIVCOLS[row][col], fillOpacity: 0.85, color: "#08090d", weight: 0.5 };
+          },
+          onEachFeature: (f, l) => {
+            const k = f.properties.CVEGEO;
+            l.bindTooltip(`<b>AGEB ${k}</b><br>X (Delito): <b>${(vx[k] || 0).toLocaleString("es-MX")}</b><br>Y (Factor): <b>${(vy[k] || 0).toLocaleString("es-MX")}</b>`, { sticky: true });
+          }
+        }).addTo(map);
+      };
+
+      useEffect(() => {
+        runAnalysis();
+      }, [varX, varY, map]);
+
+      return (
+        <div className="tab-content active">
+          <div className="sec-card">
+            <h3>🔴 Variable X — Delito</h3>
+            <select value={varX} onChange={(e) => setVarX(e.target.value)}>
+              <optgroup label="🔥 Total Consolidado">
+                <option value="Todos los Delitos">Todos los Delitos IIEG</option>
+              </optgroup>
+              <optgroup label="🔴 Grupos de Delitos">
+                {payload.capas_delitos.filter(c => c.includes("(Grupo)")).map(c => (
+                  <option key={c} value={c}>{c.replace(" (Grupo)", "")}</option>
+                ))}
+              </optgroup>
+              <optgroup label="📌 Delitos Individuales (IIEG)">
+                {payload.capas_delitos.filter(c => !c.includes("(Grupo)") && c !== "Todos los Delitos").map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </optgroup>
+            </select>
+
+            <h3 style={{ marginTop: '12px' }}>🔵 Variable Y — Factor</h3>
+            <select value={varY} onChange={(e) => setVarY(e.target.value)}>
+              <optgroup label="🏪 Negocios (DENUE)">
+                {payload.capas_negocios.map(c => <option key={c} value={c}>{c.replace("NEG: ","")}</option>)}
+              </optgroup>
+              <optgroup label="📊 Sociodemográfico (Censo)">
+                {payload.capas_censo.map(c => <option key={c} value={c}>{c.replace("CEN: ","")}</option>)}
+              </optgroup>
+              <optgroup label="🏙️ Entorno Urbano">
+                {payload.capas_urbano.map(c => <option key={c} value={c}>{c.replace("URB: ","")}</option>)}
+              </optgroup>
+            </select>
+          </div>
+
+          <div className="sec-card" style={{ textAlign: 'center' }}>
+            <h3>📈 Coeficiente de Pearson (r)</h3>
+            <div style={{
+              fontSize: '28px', fontWeight: '800', margin: '4px 0', color: stats.color,
+              background: stats.color + '12', padding: '6px', borderRadius: '8px', border: '1px solid ' + stats.color
+            }}>{stats.r.toFixed(3)}</div>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.4' }}>{stats.interp}</div>
+          </div>
+
+          <div className="sec-card">
+            <h3>📉 Scatter Plot por AGEB</h3>
+            <canvas id="scatter-canvas"></canvas>
+            <div style={{ display: 'flex', justifyX: 'space-between', fontSize: '9px', color: 'var(--text-muted)', marginTop: '4px' }}>
+              <span>→ X ({varX})</span>
+              <span style={{ marginLeft: 'auto' }}>Y ({varY.replace("NEG: ","").replace("CEN: ","").replace("URB: ","")}) ↑</span>
+            </div>
+          </div>
+
+          <div className="sec-card">
+            <h3>🎨 Leyenda Bivariada 3x3</h3>
+            <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+              <div>
+                <div className="biv-legend-grid">
+                  {BIVCOLS.map((row, r) => row.map((c, col) => (
+                    <div key={`${r}-${col}`} className="biv-legend-cell" style={{ background: c }}></div>
+                  )))}
+                </div>
+                <div style={{ display: 'flex', justifyX: 'space-between', fontSize: '8px', color: 'var(--text-muted)' }}>
+                  <span>Bajo X</span><span style={{ marginLeft: 'auto' }}>Alto X</span>
+                </div>
+              </div>
+              <div style={{ fontSize: '10px', color: 'var(--text-muted)', lineHeight: '1.7' }}>
+                <b style={{ color: '#ff4757' }}>■</b> Alto delito + bajo factor<br/>
+                <b style={{ color: '#2f7bf6' }}>■</b> Bajo delito + alto factor<br/>
+                <b style={{ color: '#8e44ad' }}>■</b> Alto en ambos<br/>
+                <b style={{ color: '#181a26', border: '1px solid #2a2e40' }}>■</b> Bajo en ambos
+              </div>
+            </div>
+          </div>
+
+          <div className="sec-card">
+            <h3>🔍 Validación</h3>
+            <div className="stat-row">
+              <div className="stat-badge">
+                <div className="title">AGEBs analizadas (N)</div>
+                <div className="value">{stats.n.toLocaleString("es-MX")}</div>
+              </div>
+              <div className="stat-badge">
+                <div className="title">p-valor aproximado</div>
+                <div className="value">{stats.p < 0.001 ? "< 0.001" : stats.p.toFixed(4)}</div>
+                <div className="subtitle">{stats.p < 0.05 ? "Significativo (Confianza >95%)" : "No significativo"}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ────────────────────────────────────────────────────────────────
+    // COMPONENTE: PESTAÑA MAPA DE CALOR (HEATMAP)
+    // ────────────────────────────────────────────────────────────────
+    function HeatmapTab({ payload, map, layerRef, heatRef }) {
+      const allOptions = ["TODOS_DELITOS", ...payload.capas_delitos, ...payload.capas_negocios];
+      const [selectedHeat, setSelectedHeat] = useState("TODOS_DELITOS");
+      const [radius, setRadius] = useState(12);
+      const [intensity, setIntensity] = useState(0.3);
+      const [totalPts, setTotalPts] = useState(0);
+
+      useEffect(() => {
+        if (!map) return;
+        const pts = payload.pt_data[selectedHeat] || [];
+        setTotalPts(pts.length);
+
+        if (layerRef.current) map.removeLayer(layerRef.current);
+        if (heatRef.current) map.removeLayer(heatRef.current);
+
+        layerRef.current = L.geoJSON(payload.geojson, {
+          style: { fillColor: "#ffffff", fillOpacity: 0.02, color: "#1f2335", weight: 0.5 }
+        }).addTo(map);
+
+        heatRef.current = L.heatLayer(pts, {
+          radius: radius,
+          blur: Math.max(2, Math.round(radius * 0.5)),
+          maxZoom: 16,
+          max: intensity,
+          gradient: { 0.2: '#2f7bf6', 0.5: '#2ed573', 0.8: '#ffa502', 1.0: '#ff4757' }
+        }).addTo(map);
+
+      }, [selectedHeat, radius, intensity, map]);
+
+      return (
+        <div className="tab-content active">
+          <div className="sec-card">
+            <h3>🔥 Mapeo de Calor Dinámico</h3>
+            <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px' }}>
+              Muestra densidades urbanas directas basadas en GPS, sin límites de polígonos.
+            </p>
+            <select value={selectedHeat} onChange={(e) => setSelectedHeat(e.target.value)}>
+              <optgroup label="🔥 Total Consolidado">
+                <option value="TODOS_DELITOS">Todos los Delitos IIEG</option>
+              </optgroup>
+              <optgroup label="🔴 Grupos de Delitos">
+                {payload.capas_delitos.filter(c => c.includes("(Grupo)")).map(c => (
+                  <option key={c} value={c}>{c.replace(" (Grupo)", "")}</option>
+                ))}
+              </optgroup>
+              <optgroup label="📌 Delitos Individuales (IIEG)">
+                {payload.capas_delitos.filter(c => !c.includes("(Grupo)") && c !== "Todos los Delitos").map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </optgroup>
+              <optgroup label="🏪 Negocios (DENUE)">
+                {payload.capas_negocios.map(c => <option key={c} value={c}>{c.replace("NEG: ","")}</option>)}
+              </optgroup>
+            </select>
+          </div>
+
+          <div className="sec-card">
+            <h3>⚙️ Ajustes Visuales de Densidad</h3>
+            <div style={{ marginBottom: '8px' }}>
+              <div style={{ display: 'flex', justifyX: 'space-between', fontSize: '11px', color: 'var(--text-muted)' }}>
+                <span>Radio del difuminado</span><span>{radius} px</span>
+              </div>
+              <input type="range" min="3" max="50" value={radius} onChange={(e) => setRadius(parseInt(e.target.value))} />
+            </div>
+
+            <div>
+              <div style={{ display: 'flex', justifyX: 'space-between', fontSize: '11px', color: 'var(--text-muted)' }}>
+                <span>Intensidad máxima</span><span>{intensity.toFixed(2)}</span>
+              </div>
+              <input type="range" min="0.05" max="3" step="0.05" value={intensity} onChange={(e) => setIntensity(parseFloat(e.target.value))} />
+            </div>
+          </div>
+
+          <div className="sec-card">
+            <h3>📋 Puntos Cargados</h3>
+            <div className="stat-badge">
+              <div className="title">Marcadores térmicos renderizados</div>
+              <div className="value">{totalPts.toLocaleString("es-MX")}</div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ────────────────────────────────────────────────────────────────
+    // COMPONENTE: PESTAÑA TEMPORAL (CHART.JS)
+    // ────────────────────────────────────────────────────────────────
+    function TemporalTab({ payload, map, layerRef }) {
+      const chartMesRef = useRef(null);
+      const chartDiaRef = useRef(null);
+      const chartRankRef = useRef(null);
+      const envipeDiaRef = useRef(null);
+      const envipeNocheRef = useRef(null);
+      const envipeProbsRef = useRef(null);
+      const envipeDelsRef = useRef(null);
+      const envipeEdadesSexosRef = useRef(null);
+      const envipeEduRef = useRef(null);
+      const envipeTop5HombresRef = useRef(null);
+      const envipeTop5MujeresRef = useRef(null);
+      const envipeEvolucionRef = useRef(null);
+
+      useEffect(() => {
+        if (layerRef.current && map) map.removeLayer(layerRef.current);
+        
+        layerRef.current = L.geoJSON(payload.geojson, {
+          style: { fillColor: "#ffffff", fillOpacity: 0.02, color: "#1f2335", weight: 0.5 }
+        }).addTo(map);
+
+        // Chart 1: Meses
+        const ctxMes = document.getElementById("canvas-meses").getContext("2d");
+        chartMesRef.current = new Chart(ctxMes, {
+          type: 'bar',
+          data: {
+            labels: payload.temp_data.labels_meses,
+            datasets: [{ data: payload.temp_data.valores_meses, backgroundColor: '#2f7bf6', borderRadius: 4 }]
+          },
+          options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+        });
+
+        // Chart 2: Días
+        const ctxDia = document.getElementById("canvas-dias").getContext("2d");
+        chartDiaRef.current = new Chart(ctxDia, {
+          type: 'bar',
+          data: {
+            labels: payload.temp_data.labels_dias,
+            datasets: [{ data: payload.temp_data.valores_dias, backgroundColor: '#ffa502', borderRadius: 4 }]
+          },
+          options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+        });
+
+        // Chart 3: Delitos Ranking
+        const ctxRank = document.getElementById("canvas-rank").getContext("2d");
+        chartRankRef.current = new Chart(ctxRank, {
+          type: 'bar',
+          data: {
+            labels: payload.temp_data.labels_delitos,
+            datasets: [{ data: payload.temp_data.valores_delitos, backgroundColor: '#ff4757', borderRadius: 4 }]
+          },
+          options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+        });
+
+        // Chart 4-9: ENVIPE
+        if (payload.env_data) {
+          const donutOpts = { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#747d8c', boxWidth: 8, font: { size: 9 } } } } };
+
+          envipeDiaRef.current = new Chart(document.getElementById("envipe-dia"), {
+            type: 'doughnut',
+            data: { labels: payload.env_data.perc_dia_labels, datasets: [{ data: payload.env_data.perc_dia_values, backgroundColor: ['#2ed573', '#ff4757', '#ffa502', '#747d8c'], borderWidth: 0 }] },
+            options: donutOpts
+          });
+
+          envipeNocheRef.current = new Chart(document.getElementById("envipe-noche"), {
+            type: 'doughnut',
+            data: { labels: payload.env_data.perc_noche_labels, datasets: [{ data: payload.env_data.perc_noche_values, backgroundColor: ['#ff4757', '#2ed573'], borderWidth: 0 }] },
+            options: donutOpts
+          });
+
+          envipeProbsRef.current = new Chart(document.getElementById("envipe-probs"), {
+            type: 'bar',
+            data: { labels: payload.env_data.prob_labels, datasets: [{ data: payload.env_data.prob_values, backgroundColor: '#ffa502', borderRadius: 4 }] },
+            options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+          });
+
+          envipeDelsRef.current = new Chart(document.getElementById("envipe-dels"), {
+            type: 'bar',
+            data: { labels: payload.env_data.vic_del_labels, datasets: [{ data: payload.env_data.vic_del_values, backgroundColor: '#ff6b81', borderRadius: 4 }] },
+            options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+          });
+
+          // Pirámide de victimización por volumen estimado
+          envipeEdadesSexosRef.current = new Chart(document.getElementById("envipe-edades-sexos"), {
+            type: 'bar',
+            data: {
+              labels: payload.env_data.pir_labels,
+              datasets: [
+                { label: 'Hombres ♂', data: payload.env_data.pir_hombres.map(x => -x), backgroundColor: '#2f7bf6', borderRadius: 4 },
+                { label: 'Mujeres ♀', data: payload.env_data.pir_mujeres, backgroundColor: '#e275bb', borderRadius: 4 }
+              ]
+            },
+            options: {
+              indexAxis: 'y',
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { display: true, position: 'top', labels: { color: '#e2e8f0', font: { size: 9 } } },
+                tooltip: {
+                  callbacks: {
+                    label: (context) => {
+                      let label = context.dataset.label || '';
+                      if (label) label += ': ';
+                      label += Math.abs(context.parsed.x).toLocaleString();
+                      return label;
+                    }
+                  }
+                }
+              },
+              scales: {
+                x: { grid: { color: '#1f2335' }, ticks: { color: '#a4b0be', font: { size: 9 }, callback: (v) => Math.abs(v).toLocaleString() } },
+                y: { grid: { color: '#1f2335' }, ticks: { color: '#a4b0be', font: { size: 9 } } }
+              }
+            }
+          });
+
+          envipeEduRef.current = new Chart(document.getElementById("envipe-edu"), {
+            type: 'bar',
+            data: { labels: payload.env_data.edu_labels, datasets: [{ data: payload.env_data.edu_values, backgroundColor: '#2ed573', borderRadius: 4 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+          });
+
+          // Top 5 Delitos Hombres
+          envipeTop5HombresRef.current = new Chart(document.getElementById("top5-hombres"), {
+            type: 'bar',
+            data: {
+              labels: payload.env_data.top5_hombres_labels,
+              datasets: [{ data: payload.env_data.top5_hombres_values, backgroundColor: '#2f7bf6', borderRadius: 4 }]
+            },
+            options: {
+              indexAxis: 'y',
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { display: false }, title: { display: true, text: 'Top 5 Delitos Hombres ♂', color: '#e2e8f0', font: { size: 10, weight: 'bold' } } },
+              scales: { x: { grid: { color: '#1f2335' }, ticks: { color: '#a4b0be', font: { size: 8 } } }, y: { grid: { color: '#1f2335' }, ticks: { color: '#a4b0be', font: { size: 8 } } } }
+            }
+          });
+
+          // Top 5 Delitos Mujeres
+          envipeTop5MujeresRef.current = new Chart(document.getElementById("top5-mujeres"), {
+            type: 'bar',
+            data: {
+              labels: payload.env_data.top5_mujeres_labels,
+              datasets: [{ data: payload.env_data.top5_mujeres_values, backgroundColor: '#e275bb', borderRadius: 4 }]
+            },
+            options: {
+              indexAxis: 'y',
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { display: false }, title: { display: true, text: 'Top 5 Delitos Mujeres ♀', color: '#e2e8f0', font: { size: 10, weight: 'bold' } } },
+              scales: { x: { grid: { color: '#1f2335' }, ticks: { color: '#a4b0be', font: { size: 8 } } }, y: { grid: { color: '#1f2335' }, ticks: { color: '#a4b0be', font: { size: 8 } } } }
+            }
+          });
+
+          // Evolución de Riesgo
+          envipeEvolucionRef.current = new Chart(document.getElementById("envipe-evolucion"), {
+            type: 'bar',
+            data: {
+              labels: payload.env_data.evolucion_labels,
+              datasets: [
+                { label: 'Callejero / Exposición Física', data: payload.env_data.evolucion_calle, backgroundColor: '#e74c3c', borderRadius: 4 },
+                { label: 'Patrimonial / Fraude', data: payload.env_data.evolucion_patr, backgroundColor: '#34495e', borderRadius: 4 }
+              ]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { display: true, position: 'top', labels: { color: '#e2e8f0', font: { size: 9 } } } },
+              scales: {
+                x: { stacked: true, grid: { color: '#1f2335' }, ticks: { color: '#a4b0be', font: { size: 9 } } },
+                y: { stacked: true, grid: { color: '#1f2335' }, max: 100, ticks: { color: '#a4b0be', font: { size: 9 }, callback: (v) => v + '%' } }
+              }
+            }
+          });
+        }
+
+        return () => {
+          if (chartMesRef.current) chartMesRef.current.destroy();
+          if (chartDiaRef.current) chartDiaRef.current.destroy();
+          if (chartRankRef.current) chartRankRef.current.destroy();
+          if (envipeDiaRef.current) envipeDiaRef.current.destroy();
+          if (envipeNocheRef.current) envipeNocheRef.current.destroy();
+          if (envipeProbsRef.current) envipeProbsRef.current.destroy();
+          if (envipeDelsRef.current) envipeDelsRef.current.destroy();
+          if (envipeEdadesSexosRef.current) envipeEdadesSexosRef.current.destroy();
+          if (envipeEduRef.current) envipeEduRef.current.destroy();
+          if (envipeTop5HombresRef.current) envipeTop5HombresRef.current.destroy();
+          if (envipeTop5MujeresRef.current) envipeTop5MujeresRef.current.destroy();
+          if (envipeEvolucionRef.current) envipeEvolucionRef.current.destroy();
+        };
+      }, [map]);
+
+      return (
+        <div className="temporal-grid">
+          <div className="sec-card">
+            <h3>📅 Estacionalidad por Mes (2023)</h3>
+            <div className="chart-box"><canvas id="canvas-meses"></canvas></div>
+          </div>
+          <div className="sec-card">
+            <h3>📆 Crímenes por Día de la Semana</h3>
+            <div className="chart-box"><canvas id="canvas-dias"></canvas></div>
+          </div>
+          <div className="sec-card">
+            <h3>📋 Distribución de Todos los Delitos</h3>
+            <div className="chart-box" style={{ height: '220px' }}><canvas id="canvas-rank"></canvas></div>
+          </div>
+          <div className="sec-card">
+            <h3>🛡️ Percepción de Seguridad (ENVIPE)</h3>
+            <div style={{ display: 'flex', gap: '8px', flex: 1, height: '220px' }}>
+              <div style={{ flex: 1, textAlign: 'center' }}>
+                <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '700' }}>DE DÍA</span>
+                <div style={{ height: '180px' }}><canvas id="envipe-dia"></canvas></div>
+              </div>
+              <div style={{ flex: 1, textAlign: 'center' }}>
+                <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '700' }}>DE NOCHE</span>
+                <div style={{ height: '180px' }}><canvas id="envipe-noche"></canvas></div>
+              </div>
+            </div>
+          </div>
+          <div className="sec-card">
+            <h3>⚠️ Principales Problemas Comunitarios</h3>
+            <div className="chart-box" style={{ height: '220px' }}><canvas id="envipe-probs"></canvas></div>
+          </div>
+          <div className="sec-card">
+            <h3>🔴 Crímenes Declarados (Frecuencia)</h3>
+            <div className="chart-box" style={{ height: '220px' }}><canvas id="envipe-dels"></canvas></div>
+          </div>
+          <div className="sec-card span-2">
+            <h3>👥 Pirámide de Victimización: Volumen Estimado (Edad y Sexo)</h3>
+            <div className="chart-box" style={{ height: '220px' }}><canvas id="envipe-edades-sexos"></canvas></div>
+          </div>
+          <div className="sec-card">
+            <h3>🎓 Nivel Educativo del Núcleo Familiar</h3>
+            <div className="chart-box" style={{ height: '220px' }}><canvas id="envipe-edu"></canvas></div>
+          </div>
+          
+          {/* Tarjetas Nuevas de Visualización Avanzada */}
+          <div className="sec-card span-2">
+            <h3>🛡️ Top 5 Delitos por Sexo (Volumen Estimado)</h3>
+            <div style={{ display: 'flex', gap: '16px', height: '220px' }}>
+              <div style={{ flex: 1, height: '100%' }}>
+                <canvas id="top5-hombres"></canvas>
+              </div>
+              <div style={{ flex: 1, height: '100%' }}>
+                <canvas id="top5-mujeres"></canvas>
+              </div>
+            </div>
+          </div>
+          <div className="sec-card">
+            <h3>📈 Transición de Vulnerabilidad a lo largo de la Vida</h3>
+            <div className="chart-box" style={{ height: '220px' }}><canvas id="envipe-evolucion"></canvas></div>
+          </div>
+          
+          {/* Matriz de Calor de Riesgo Específico (Tabla interactiva) */}
+          <div className="sec-card span-3">
+            <h3>🔥 Composición de Riesgo Específico (Tipo de Delito vs Perfil Demográfico)</h3>
+            <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '8px' }}>
+              Lectura vertical: Del total de delitos sufridos por cada perfil, ¿qué porcentaje representa cada tipo de delito?
+            </p>
+            <div style={{ overflowX: 'auto', width: '100%', maxHeight: '420px' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px', textAlign: 'center', color: '#e2e8f0' }}>
+                <thead>
+                  <tr style={{ backgroundColor: '#0a0b10', borderBottom: '1px solid #1f2335' }}>
+                    <th style={{ padding: '8px', textAlign: 'left', minWidth: '180px' }}>Tipo de Delito</th>
+                    {payload.env_data.heatmap_profiles.map((p, i) => (
+                      <th key={i} style={{ padding: '8px', fontWeight: 'bold' }}>{p}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {payload.env_data.heatmap_delitos.map((d, rowIdx) => (
+                    <tr key={rowIdx} style={{ borderBottom: '1px solid #1c1e2d' }}>
+                      <td style={{ padding: '6px', textAlign: 'left', fontWeight: '500', color: '#a4b0be' }}>{d}</td>
+                      {payload.env_data.heatmap_profiles.map((p, colIdx) => {
+                        const val = payload.env_data.heatmap_matrix[rowIdx][colIdx];
+                        const opacity = Math.min(val / 40.0, 1.0);
+                        const bg = `rgba(192, 57, 43, ${0.05 + 0.9 * opacity})`;
+                        const textColor = opacity > 0.4 ? '#ffffff' : '#e2e8f0';
+                        return (
+                          <td key={colIdx} style={{ padding: '6px', backgroundColor: bg, color: textColor, fontWeight: 'bold' }}>
+                            {val}%
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ────────────────────────────────────────────────────────────────
+    // COMPONENTE: PESTAÑA COLONIAS (RANKING + FLYTO)
+    // ────────────────────────────────────────────────────────────────
+    function ColoniasTab({ payload, map, layerRef, markersRef }) {
+      const list = payload.col_data || [];
+      const [selectedCol, setSelectedCol] = useState(null);
+      const desgloseRef = useRef(null);
+
+      // Renderizar polígonos y resaltar el seleccionado
+      useEffect(() => {
+        if (!map) return;
+        
+        if (layerRef.current) map.removeLayer(layerRef.current);
+        markersRef.current.forEach(m => map.removeLayer(m));
+        
+        if (payload.colonias_geojson) {
+          layerRef.current = L.geoJSON(payload.colonias_geojson, {
+            style: (f) => {
+              const cName = f.properties.colonia_asignada || f.properties.colonia;
+              const isSelected = selectedCol && cName === selectedCol.colonia;
+              return {
+                fillColor: isSelected ? '#ff4757' : '#2f7bf6',
+                fillOpacity: isSelected ? 0.7 : 0.1,
+                color: isSelected ? '#ffffff' : '#08090d',
+                weight: isSelected ? 2.5 : 1
+              };
+            },
+            onEachFeature: (f, layer) => {
+              const cName = f.properties.colonia_asignada || f.properties.colonia || "Desconocida";
+              const total = f.properties.total || 0;
+              layer.bindTooltip(`<b>${cName.toUpperCase()}</b><br>Total Delitos: ${total}`);
+              
+              layer.on('click', () => {
+                const colData = list.find(x => x.colonia === cName) || { colonia: cName, lat: f.properties.lat, lng: f.properties.lng, total };
+                handleColClick(colData);
+              });
+            }
+          }).addTo(map);
+        }
+      }, [map, selectedCol, payload]);
+
+      // Renderizar gráfica de desglose delictivo
+      useEffect(() => {
+        if (!selectedCol || !payload.delitos_breakdown) return;
+        const desglose = payload.delitos_breakdown[selectedCol.colonia];
+        if (!desglose) return;
+        
+        const sorted = Object.entries(desglose)
+          .filter(([k, v]) => v > 0)
+          .sort((a, b) => b[1] - a[1]);
+          
+        if (desgloseRef.current) desgloseRef.current.destroy();
+        
+        desgloseRef.current = new Chart(document.getElementById("canvas-desglose"), {
+          type: 'bar',
+          data: {
+            labels: sorted.map(x => x[0].length > 18 ? x[0].substring(0, 18) + '...' : x[0]),
+            datasets: [{
+              data: sorted.map(x => x[1]),
+              backgroundColor: 'rgba(255, 71, 87, 0.85)',
+              borderColor: '#ff4757',
+              borderWidth: 1,
+              borderRadius: 4
+            }]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            indexAxis: 'y', // Gráfica de barras horizontales
+            plugins: { 
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  title: (items) => sorted[items[0].dataIndex][0] // Mostrar título completo en el tooltip
+                }
+              }
+            },
+            scales: {
+              x: { grid: { color: '#1f2335' }, ticks: { color: '#747d8c', font: {size: 10} } },
+              y: { grid: { display: false }, ticks: { color: '#cbd5e1', font: {size: 9, weight: 600} } }
+            }
+          }
+        });
+      }, [selectedCol, payload]);
+
+      const handleColClick = (c) => {
+        if (!map) return;
+        setSelectedCol(c);
+        if (c.lat && c.lng) {
+          map.flyTo([c.lat, c.lng], 14, { duration: 1.5 });
+        }
+      };
+
+      return (
+        <div className="tab-content active" style={{ display: 'flex', flexDirection: 'column', minHeight: '100%', gap: '16px' }}>
+          <div className="sec-card" style={{ flexShrink: 0 }}>
+            <h3>🏘️ Top 30 Colonias más Conflictivas</h3>
+            <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '12px' }}>
+              Selecciona una colonia de la lista o del mapa para ver su desglose delictivo por categoría.
+            </p>
+            <div className="list-wrapper" style={{ maxHeight: '200px' }}>
+              {list.map((c, i) => (
+                <div 
+                  key={c.colonia} 
+                  className="list-item" 
+                  onClick={() => handleColClick(c)}
+                  style={{ 
+                    borderColor: selectedCol?.colonia === c.colonia ? 'var(--primary)' : 'var(--border-color)',
+                    background: selectedCol?.colonia === c.colonia ? 'var(--bg-card-hover)' : '#08090d'
+                  }}
+                >
+                  <span className="name">{i+1}. {c.colonia.toUpperCase()}</span>
+                  <span className="score">{c.total.toLocaleString("es-MX")}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {selectedCol ? (
+            <div className="sec-card" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+              <h3>🚨 Desglose de Delitos</h3>
+              <p style={{ fontSize: '11px', color: 'var(--primary)', fontWeight: '700', marginBottom: '8px' }}>
+                {selectedCol.colonia.toUpperCase()} ({selectedCol.total} casos)
+              </p>
+              <div className="chart-box" style={{ minHeight: '250px', flex: 1 }}>
+                <canvas id="canvas-desglose"></canvas>
+              </div>
+            </div>
+          ) : (
+            <div className="sec-card" style={{ padding: '16px' }}>
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)', textAlign: 'center' }}>
+                Haz clic en una colonia de la lista o en el mapa para ver su desglose.
+              </p>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // ELIMINADA PESTAÑA ENVIPE PARA FUSIONARLA CON COLONIAS
+
+    // COMPONENTE: PESTAÑA ANALISTA DE IA (GEMINI API INTEGRADA)
+    // ────────────────────────────────────────────────────────────────
+    function AiAnalystTab({ payload, apiKey, openConfig, map, layerRef, markersRef }) {
+      const [colonia, setColonia] = useState(payload.col_list_all[0]?.colonia || '');
+      const [analisis, setAnalisis] = useState('');
+      const [loading, setLoading] = useState(false);
+
+      // Dibujar polígonos de las colonias en el mapa
+      useEffect(() => {
+        if (!map) return;
+        
+        // Limpiar capas previas
+        if (layerRef.current) map.removeLayer(layerRef.current);
+        markersRef.current.forEach(m => map.removeLayer(m));
+        markersRef.current = [];
+
+        // Obtener el máximo de delitos para la escala de color
+        const maxCrimes = Math.max(...(payload.col_list_all || []).map(c => c.total || 0), 1);
+
+        const getMarkerColor = (total) => {
+          const ratio = total / maxCrimes;
+          if (ratio > 0.6) return '#ff4757'; // Crítico
+          if (ratio > 0.3) return '#ffa502'; // Alto/Medio
+          if (ratio > 0.1) return '#2f7bf6'; // Moderado
+          return '#2ed573'; // Bajo
+        };
+
+        if (payload.colonias_geojson) {
+          layerRef.current = L.geoJSON(payload.colonias_geojson, {
+            style: (f) => {
+              const total = f.properties.total || 0;
+              const color = getMarkerColor(total);
+              return {
+                fillColor: color,
+                fillOpacity: 0.65,
+                color: '#08090d',
+                weight: 1.2
+              };
+            },
+            onEachFeature: (f, layer) => {
+              const total = f.properties.total || 0;
+              const colName = f.properties.colonia_asignada || f.properties.colonia || "Desconocida";
+              const color = getMarkerColor(total);
+              
+              layer.bindTooltip(
+                `<b style="color: ${color};">${colName.toUpperCase()}</b><br>Delitos Totales: ${total}`,
+                { sticky: true }
+              );
+              
+              layer.on({
+                mouseover: (e) => {
+                  const l = e.target;
+                  l.setStyle({ fillOpacity: 0.9, weight: 2, color: '#ffffff' });
+                  l.bringToFront();
+                },
+                mouseout: (e) => {
+                  layerRef.current.resetStyle(e.target);
+                },
+                click: (e) => {
+                  setColonia(colName);
+                  if (f.properties.lat && f.properties.lng) {
+                    map.flyTo([f.properties.lat, f.properties.lng], 14, { duration: 1.5 });
+                  } else {
+                    map.fitBounds(e.target.getBounds());
+                  }
+                }
+              });
+            }
+          }).addTo(map);
+        }
+      }, [map, payload]);
+
+      const requestAnalysis = () => {
+        if (!colonia) return;
+        setLoading(true);
+        setAnalisis('');
+
+        fetch("/api/analista", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            colonia: colonia,
+            api_key: apiKey
+          })
+        })
+        .then(res => res.json())
+        .then(data => {
+          setLoading(false);
+          if (data.error) {
+            setAnalisis(`❌ **Error**: ${data.error}`);
+          } else {
+            // Renderizar markdown con marked
+            setAnalisis(marked.parse(data.analisis));
+          }
+        })
+        .catch(err => {
+          setLoading(false);
+          setAnalisis(`❌ **Error de Conexión**: No se pudo consultar la API del servidor local.`);
+        });
+      };
+
+      return (
+        <div className="tab-content active">
+          <div className="sec-card">
+            <h3>🤖 Analista de IA con Gemini</h3>
+            <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '10px' }}>
+              Gemini analizará los datos de crímenes, censo e infraestructura en la colonia seleccionada para generar un reporte y recomendaciones.
+            </p>
+            
+            <div className="settings-trigger" onClick={openConfig}>
+              ⚙️ Ajustar clave de API de Gemini
+            </div>
+
+            <label style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '4px' }}>
+              Selecciona una colonia de GDL:
+            </label>
+            <select value={colonia} onChange={(e) => setColonia(e.target.value)}>
+              {payload.col_list_all.map(c => (
+                <option key={c.colonia} value={c.colonia}>
+                  {c.colonia.toUpperCase()} ({c.total} delitos)
+                </option>
+              ))}
+            </select>
+
+            <button 
+              className="action-btn" 
+              onClick={requestAnalysis} 
+              disabled={loading || !colonia}
+              style={{ marginTop: '8px' }}
+            >
+              {loading ? 'Generando Reporte Urbano...' : 'Generar Diagnóstico IA ▶'}
+            </button>
+          </div>
+
+          <div className="sec-card" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+            <h3>📋 Reporte Analítico de Seguridad</h3>
+            
+            {loading && (
+              <div className="glowing-loader">
+                <div className="pulse-glow"></div>
+                <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Procesando cruces demográficos e infraestructura...</span>
+              </div>
+            )}
+
+            {!loading && !analisis && (
+              <div style={{ textAlign: 'center', padding: '40px 10px', color: 'var(--text-muted)', fontSize: '12px' }}>
+                Selecciona una colonia en la lista y presiona el botón para generar el diagnóstico predictivo de IA.
+              </div>
+            )}
+
+            {!loading && analisis && (
+              <div 
+                className="ai-report" 
+                dangerouslySetInnerHTML={{ __html: analisis }}
+              />
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(<App />);
+  </script>
+</body>
+</html>
